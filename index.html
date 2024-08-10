@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="firebase.js"></script>
+  <style>
+    .hidden {
+      display: none;
+    }
+  </style>
+  <script>
+    function verifySecurityKey() {
+      const securityKey = document.getElementById('securityKey').value;
+
+      firebase.auth().signInWithEmailAndPassword('admin@gmail.com', securityKey)
+        .then((userCredential) => {
+          window.location.href = 'admin.html';
+        })
+        .catch((error) => {
+          alert('Invalid security key. Please try again.');
+        });
+    }
+    function login() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      if (email === "admin@gmail.com" && password === "admin@12") {
+        document.getElementById('securityKeyContainer').classList.remove('hidden');
+        const getStartedBtn = document.getElementById('getStartedBtn');
+        getStartedBtn.value = "Verify Security Key";
+        getStartedBtn.setAttribute('onclick', 'verifySecurityKey()');
+        return;
+      }
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          redirectToRolePage(user.email);
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          alert('Invalid Password or Email')
+        });
+    }
+    function redirectToRolePage(email) {
+      const usersRef = firebase.database().ref('users');
+      usersRef.orderByChild('email').equalTo(email).once('value')
+        .then((snapshot) => {
+          let userData;
+          snapshot.forEach((childSnapshot) => {
+            userData = childSnapshot.val();
+          });
+
+          if (userData && userData.role) {
+            const role = userData.role;
+            switch (role) {
+              case 'Developer':
+                window.location.href = `Developer.html?useremail=${email}`;
+                break;
+              case 'Tester':
+                window.location.href = `Tester.html?useremail=${email}`;
+                break;
+              case 'Designer':
+                window.location.href = `Designer.html?useremail=${email}`;
+                break;
+              case 'Manager':
+                window.location.href = `Manager.html?useremail=${email}`;
+                break;
+              default:
+                console.error('Invalid role:', role);
+                alert('Invalid role. Please contact support.');
+                break;
+            }
+          } else {
+            console.error('Role not found in user data:', userData);
+            alert('Role not found in user data. Please contact support.');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+          alert('Error fetching user data. Please try again.');
+        });
+    }
+    function signUpUser(name, email, password, role) {
+      const usersRef = firebase.database().ref('users');
+      const signupMessage = document.getElementById('signupMessage');
+
+      usersRef.orderByChild('email').equalTo(email).once('value')
+        .then(snapshot => {
+          if (snapshot.exists()) {
+            alert('This email is already registered. Please use a different email.');
+          } else {
+            return firebase.database().ref('users').push({
+              name: name,
+              email: email,
+              password: password,
+              approved: 'no',
+              role: role 
+            })
+            .then(() => {
+              alert('Sign up successful! Wait for admin approval.');
+              signupMessage.textContent = 'Sign up successful! Wait for admin approval.';
+              window.location.reload();
+            })
+            .catch(error => {
+              console.error('Error saving user data:', error);
+              alert('An error occurred during sign up. Please try again.');
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error checking email existence:', error);
+          signupMessage.textContent = 'An error occurred. Please try again.';
+          signupMessage.style.color = 'red';
+        });
+    }
+    function signup(event) {
+      event.preventDefault();
+      const name = document.querySelector('input[name="name"]').value;
+      const email = document.querySelector('input[name="email"]').value;
+      const password = document.querySelector('input[name="password"]').value;
+      const role = document.querySelector('select[name="Role"]').value; 
+      signUpUser(name, email, password, role);
+    }
+  </script>
+</head>
+<body>
+  <main>
+    <div class="box">
+      <div class="inner-box">
+        <div class="forms-wrap">
+          <form class="sign-in-form">
+            <div class="heading">
+              <h2>Role Based Access Control System</h2><br>
+              <h6>Not registered yet?</h6>
+              <a href="#" class="toggle">Create Your Account</a>
+            </div>
+            <div class="actual-form">
+              <div class="input-wrap">
+                <input type="text" id="loginEmail" class="input-field" placeholder="Email" required />
+              </div>
+              <div class="input-wrap">
+                <input type="password" id="loginPassword" class="input-field" placeholder="Password" required />
+              </div>
+              <div id="securityKeyContainer" class="input-wrap hidden">
+                <input type="password" id="securityKey" class="input-field" placeholder="Enter Security Key" />
+              </div>
+              <input type="button" id="getStartedBtn" onclick="login()" value="Get Started &nbsp;&nbsp;&nbsp;&nbsp;&rarr;" class="sign-btn" />
+            </div>
+          </form>
+          <form class="sign-up-form" onsubmit="signup(event);">
+            <div class="heading">
+              <h2>Role Based Access Control System</h2><br>
+              <h6>Already have an account?</h6>
+              <a href="#" class="toggle">Sign in</a>
+            </div>
+            <div class="actual-form">
+              <div class="input-wrap">
+                <input type="text" name="name" class="input-field" placeholder="Name" required />
+              </div>
+              <div class="input-wrap">
+                <input type="email" name="email" class="input-field" placeholder="Email" required />
+              </div>
+              <div class="input-wrap">
+                <input type="password" name="password" class="input-field" placeholder="Password" required />
+              </div>
+              <div class="input-wrap">
+                <select name="Role" class="input-field" required>
+                  <option value="">Select Role</option>
+                  <option value="Designer">Designer</option>
+                  <option value="Developer">Developer</option>
+                  <option value="Tester">Tester</option>
+                  <option value="Manager">Product Manager</option>
+                </select>
+              </div>
+              <input type="submit" value="Sign Up" class="sign-btn" />
+              <div id="signupMessage" class="message"></div> <!-- Added message div for feedback -->
+            </div>
+          </form>
+        </div>
+        <div class="carousel">
+          <div class="images-wrapper">
+            <img src="./img/security.webp" class="image img-1 show" height="150%" alt="" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

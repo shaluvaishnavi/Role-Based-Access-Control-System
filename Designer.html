@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Designer Page</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700" rel="stylesheet">
+    <link rel="stylesheet" href="Assets/fonts/icomoon/style.css">
+    <link rel="stylesheet" href="Assets/css/owl.carousel.min.css">
+    <link rel="stylesheet" href="Assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="Assets/css/style.css">
+</head>
+<body>
+    <header class="site-navbar" role="banner">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-11 col-xl-2">
+                    <h1 class="mb-0 site-logo"><a href="#" class="text-white mb-0">RBAC System</a></h1>
+                </div>
+                <div class="col-12 col-md-10 d-none d-xl-block">
+                    <nav class="site-navigation position-relative text-right" role="navigation">
+                        <ul class="site-menu js-clone-nav mr-auto d-none d-lg-block">
+                            <li class="menu-item" style="color: white;">
+                                <a href="#">Hey Designer ! </a>
+                                <span class="email-tooltip" id="emailTooltip"></span>
+                                <span id="emailStatus"></span>
+                            </li>
+                            <li><a onclick="signOut()" style="cursor: pointer;">Logout</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div id="content">
+            <div id="projectsContent">
+                <button id="myProjectsButton" class="btn btn-secondary">
+                    <span class="icon-folder-open"></span> My Projects
+                </button>
+                <div id="projectsList"></div>
+            </div>
+        </div>  
+    </main>
+    <div id="inputModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Complete Work</h2>
+            <label for="completionNotes">Link:</label>
+            <textarea id="completionNotes" rows="4" cols="50" required></textarea><br>
+            <button id="viewPreview" class="btn btn-secondary">View Preview</button><br>
+            <button id="submitNotes" class="btn btn-primary">Submit</button>
+            <br>
+            <label for="notes">New Message</label>
+            <textarea id="notes" rows="4" cols="50" readonly></textarea>
+        </div>
+    </div>
+    <script src="Assets/js/jquery-3.3.1.min.js"></script>
+    <script src="Assets/js/popper.min.js"></script>
+    <script src="Assets/js/bootstrap.min.js"></script>
+    <script src="Assets/js/jquery.sticky.js"></script>
+    <script src="Assets/js/main.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = urlParams.get('useremail');
+            if (email) {
+                document.getElementById('emailTooltip').textContent = email;
+                updateEmailStatus(email);
+            }
+            document.getElementById("myProjectsButton").addEventListener('click', function() {
+                displayProjects();
+            });
+            const inputModal = document.getElementById('inputModal');
+            const closeButton = document.querySelector('.close-button');
+            const submitNotesButton = document.getElementById('submitNotes');
+            const viewPreviewButton = document.getElementById('viewPreview');
+            closeButton.addEventListener('click', function() {
+                inputModal.style.display = 'none';
+            });
+            window.addEventListener('click', function(event) {
+                if (event.target === inputModal) {
+                    inputModal.style.display = 'none';
+                }
+            });
+            function markProjectAsCompleted(projectId) {
+                
+                inputModal.style.display = 'block';
+                currentProjectId = projectId;
+                const notesRef = firebase.firestore().collection('projects').doc(projectId).collection('work').doc(email);
+                notesRef.get().then((doc) => {
+                    
+                    const notesTextarea = document.getElementById('notes');
+                    if (doc.exists) {
+                        const notes = doc.data().notes || '';
+                        notesTextarea.value = notes;
+                    } else {
+                        notesTextarea.value = '';
+                    }
+                }).catch((error) => {
+                    console.error('Error fetching notes:', error);
+                    document.getElementById('notes').value = ''; 
+                });
+            }
+            viewPreviewButton.addEventListener('click', function() {
+                const url = completionNotes.value.trim();
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
+                    alert('Please enter a link to preview.');
+                }
+            });
+
+            submitNotesButton.addEventListener('click', function() {
+                // Collect data from the input field
+                const completionNotes = document.getElementById('completionNotes').value.trim();
+                
+                if (completionNotes === '') {
+                    alert('Please enter a link before submitting.');
+                    return;
+                }
+                
+                // Check if currentProjectId is defined
+                if (typeof currentProjectId === 'undefined') {
+                    alert('Error: Project ID is not defined.');
+                    return;
+                }
+        
+                // Call the updateProjectCompletion function
+                updateProjectCompletion(currentProjectId, email, completionNotes);
+            });
+
+            function updateProjectCompletion(projectId, userEmail, notes) {
+                const db = firebase.firestore();
+                const workRef = db.collection('projects').doc(projectId).collection('work').doc(userEmail);
+                workRef.set({
+                    completed: "Completed",
+                    link: notes
+                }, { merge: true })
+                .then(() => {
+                    return db.collection('projects').doc(projectId).collection('work').get();
+                })
+                .then((querySnapshot) => {
+                    const updates = [];
+                    querySnapshot.forEach((doc) => {
+                        const userData = doc.data();
+                        if (userData.role === 'Developer') {
+                            const designerEmail = doc.id;
+                            updates.push(
+                                db.collection('projects').doc(projectId).collection('work').doc(designerEmail).set({
+                                    completed: 'Not Completed'
+                                }, { merge: true })
+                            );
+                        }
+                    });
+                    return Promise.all(updates);
+                })
+                .then(() => {
+                    alert('Work has Submitted Successfully');
+                    inputModal.style.display = 'none';
+                    displayProjects();
+                })
+                .catch((error) => {
+                    console.error('Error updating project completion and designer statuses:', error);
+                    alert('Error updating project completion. Please try again.');
+                });
+            }
+            function displayProjects() {
+                const db = firebase.firestore();
+                const projectsRef = db.collection('projects');
+                projectsRef.get().then((querySnapshot) => {
+                    const projectsList = document.getElementById('projectsList');
+                    projectsList.innerHTML = '';
+                    querySnapshot.forEach((doc) => {
+                        const projectData = doc.data();
+                        const projectItem = document.createElement('div');
+                        projectItem.classList.add('projectItem');
+                        const designerStatusId = `designerStatus-${doc.id}`;
+                        const developerStatusId = `developerStatus-${doc.id}`;
+                        const testerStatusId = `testerStatus-${doc.id}`;
+                        const managerStatusId = `managerStatus-${doc.id}`;
+                        projectItem.innerHTML = `
+                        <h3><strong>Project name: </strong>${projectData.projectName} - <span class="badge badge-info">${projectData.status}</span></h3>
+                            <p><strong>Designer:</strong> ${projectData.designer} <span id="${designerStatusId}"></span></p>
+                            <p><strong>Developer:</strong> ${projectData.developer} <span id="${developerStatusId}"></span></p>
+                            <p><strong>Tester:</strong> ${projectData.tester} <span id="${testerStatusId}"></span></p>
+                            <p><strong>Product Manager:</strong> ${projectData.manager} <span id="${managerStatusId}"></span></p>
+                        `;
+                        const userEmail = email; 
+                        Promise.all([
+                            fetchUserStatus(doc.id, projectData.designer, designerStatusId),
+                            fetchUserStatus(doc.id, projectData.developer, developerStatusId),
+                            fetchUserStatus(doc.id, projectData.tester, testerStatusId),
+                            fetchUserStatus(doc.id, projectData.manager, managerStatusId)
+                        ]).then(([designerStatus, developerStatus, testerStatus,managerStatus]) => {
+                            const userStatus = (projectData.designer === userEmail) ? designerStatus :
+                                                (projectData.developer === userEmail) ? developerStatus :
+                                                (projectData.tester === userEmail) ? testerStatus :
+                                                (projectData.manager === userEmail) ? managerStatus : null;
+                            if (userStatus === "Not Completed") {
+                                const finishButton = document.createElement('button');
+                                finishButton.classList.add('btn', 'btn-success');
+                                finishButton.textContent = 'Finish Work';
+                                finishButton.addEventListener('click', () => markProjectAsCompleted(doc.id));
+                                projectItem.appendChild(finishButton);
+                            }
+                        });
+                        projectsList.appendChild(projectItem);
+                    });
+                }).catch((error) => {
+                    console.error('Error displaying projects:', error);
+                });
+            }
+            function fetchUserStatus(projectId, userEmail, elementId) {
+                const db = firebase.firestore();
+                const projectRef = db.collection('projects').doc(projectId);
+                const workRef = projectRef.collection('work').doc(userEmail);
+                
+                return workRef.get().then((workDoc) => {
+                    const statusElement = document.getElementById(elementId);
+                    if (workDoc.exists) {
+                        const data = workDoc.data();
+                        const status = data.completed || "No status"; 
+                        if (status === undefined || status === null || status === '') {
+                            statusElement.textContent = " - Status: No status";
+                        } else {
+                            statusElement.textContent = ` - Status: ${status}`;
+                        }
+                        return status;
+                    } else {
+                        statusElement.textContent = " - Status: No status";
+                        return "No status";
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user work document:", error);
+                    return "Not Completed";
+                });
+            }
+            function updateEmailStatus(email) {
+                const db = firebase.firestore();
+                const userRef = db.collection('users').where('email', '==', email);
+                userRef.get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const userData = doc.data();
+                        const emailStatus = document.getElementById('emailStatus');
+                        if (userData.email === email) {
+                            emailStatus.textContent = 'Active';
+                            emailStatus.className = 'status-completed';
+                        } else {
+                            emailStatus.textContent = 'Inactive';
+                            emailStatus.className = 'status-pending';
+                        }
+                    });
+                }).catch((error) => {
+                    console.error('Error updating email status:', error);
+                });
+            }
+        });
+        function signOut() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'index.html';
+            }).catch((error) => {
+                console.error('Error signing out:', error);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Page</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="firebase.js"></script>
+    <script src="approve.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="Assets/fonts/icomoon/style.css">
+    <link rel="stylesheet" href="Assets/css/owl.carousel.min.css">
+    <link rel="stylesheet" href="Assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="Assets/css/style.css">
+</head>
+<body>
+    <header class="site-navbar" role="banner">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-11 col-xl-2">
+                    <h1 class="mb-0 site-logo"><a href="#" class="text-white mb-0">RBAC System</a></h1>
+                </div>
+                <div class="col-12 col-md-10 d-none d-xl-block">
+                    <nav class="site-navigation position-relative text-right" role="navigation">
+                        <ul class="site-menu js-clone-nav mr-auto d-none d-lg-block">
+                            <li class="menu-item" data-target="projects"><a href="#">Projects</a></li>
+                            <li class="menu-item" data-target="contact"><a href="#">Approvals</a></li>
+                            <li class="menu-item active" data-target="ChangeSecuritykey"><a href="#">Change Securitykey</a></li>
+                            <li><a onclick="signOut()" style="cursor: pointer;">Logout</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="container">
+            <div id="content">
+                <p>Welcome! Select a menu item to see its content.</p>
+            </div>
+        </div>
+        <div id="projectModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2>ADD NEW PROJECT</h2>
+                <form id="projectForm">
+                    <div class="form-group">
+                        <label for="projectNameInput">Project Name:</label>
+                        <input type="text" id="projectNameInput" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="designerSelect">Select Designer:</label>
+                        <select id="designerSelect" class="form-control" required>
+                            <option value="">Select designer</option>
+                            <!-- Designers will be dynamically populated here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="developerSelect">Select Developer:</label>
+                        <select id="developerSelect" class="form-control" required>
+                            <option value="">Select developer</option>
+                            <!-- Developers will be dynamically populated here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="testerSelect">Select Tester:</label>
+                        <select id="testerSelect" class="form-control" required>
+                            <option value="">Select tester</option>
+                            <!-- Testers will be dynamically populated here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="testerSelect">Select Product Manager:</label>
+                        <select id="managerSelect" class="form-control" required>
+                            <option value="">Select Product Manager</option>
+                            <!-- Testers will be dynamically populated here -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </main>
+    <div id="inputModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Work Actions</h2><br>
+            <div id="fileLinksContainer"></div>
+
+            <button id="downloadAllButton" class="btn btn-primary" style="display: none;">Download All Files</button><br>
+            <button id="acceptButton" class="btn btn-success">Accept</button><br>
+            <button id="rejectButton" class="btn btn-danger">Reject</button><br>
+            <div id="notesSection" style="display: none;">
+                <label for="notesInput">Notes:</label>
+                <textarea id="notesInput" rows="4" cols="50"></textarea>
+            </div>
+        </div>
+    </div>
+    <script src="Assets/js/jquery-3.3.1.min.js"></script>
+    <script src="Assets/js/popper.min.js"></script>
+    <script src="Assets/js/bootstrap.min.js"></script>
+    <script src="Assets/js/jquery.sticky.js"></script>
+    <script src="Assets/js/main.js"></script>
+    <script>
+        function signOut() {
+            window.location.href = 'index.html';
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
